@@ -1,0 +1,17 @@
+[
+{
+  "directory": "/home/xiang/Project/my_ID/build",
+  "command": "/usr/bin/x86_64-linux-gnu-g++-5  -DOPENCV_ON -I/opt/ros/kinetic/include/opencv-3.3.1-dev -I/opt/ros/kinetic/include/opencv-3.3.1-dev/opencv  -std=c++11 -O3 -g   -std=gnu++11 -o CMakeFiles/my_lib.dir/src/drive/drive.cpp.o -c /home/xiang/Project/my_ID/src/drive/drive.cpp",
+  "file": "/home/xiang/Project/my_ID/src/drive/drive.cpp"
+},
+{
+  "directory": "/home/xiang/Project/my_ID/build",
+  "command": "/usr/bin/x86_64-linux-gnu-g++-5  -DOPENCV_ON -I/opt/ros/kinetic/include/opencv-3.3.1-dev -I/opt/ros/kinetic/include/opencv-3.3.1-dev/opencv  -std=c++11 -O3 -g   -std=gnu++11 -o CMakeFiles/my_lib.dir/src/serial/Serial.cpp.o -c /home/xiang/Project/my_ID/src/serial/Serial.cpp",
+  "file": "/home/xiang/Project/my_ID/src/serial/Serial.cpp"
+},
+{
+  "directory": "/home/xiang/Project/my_ID/build",
+  "command": "/usr/bin/x86_64-linux-gnu-g++-5  -DOPENCV_ON -isystem /opt/ros/kinetic/include/opencv-3.3.1-dev -isystem /opt/ros/kinetic/include/opencv-3.3.1-dev/opencv  -std=c++11 -O3 -g   -std=gnu++11 -o CMakeFiles/my_Intelligent_driving.dir/src/Intel_dri_main.cpp.o -c /home/xiang/Project/my_ID/src/Intel_dri_main.cpp",
+  "file": "/home/xiang/Project/my_ID/src/Intel_dri_main.cpp"
+}
+]
