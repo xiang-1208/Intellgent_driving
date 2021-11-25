@@ -38,6 +38,7 @@ endif (BUILD_WITH_OPENCV)
 #my_ID
 add_library(my_lib 
 src/drive/drive.cpp
+src/extract/f_extract.cpp
 src/serial/Serial.cpp)
 add_executable(my_Intelligent_driving src/Intel_dri_main.cpp)
 target_link_libraries(my_Intelligent_driving ${DEP_LIBS})

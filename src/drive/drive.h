@@ -15,6 +15,8 @@ public:
     void run();
     
 private:
+    /*相机模式(T) or 图片测试模式(F)*/
+    bool RUNING_MOD = true;
     STATUS state = Parking;
 
     VideoCapture car_capture;
