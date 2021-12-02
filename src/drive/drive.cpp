@@ -2,8 +2,6 @@
 
 // #define SERIAL
 
-
-
 Drive::Drive()
 {
     if (RUNING_MOD)
@@ -77,6 +75,10 @@ void Drive::doPark()
         else
             //打开单张图片
             Image = imread("../data/Image2.png");  
+        Extract my_extract(Image);
+        Mat word = my_extract.return_word();
+        double raw = my_extract.return_raw();
+        sendto_car(word,raw);
     }
 }
 
@@ -92,4 +94,25 @@ void Drive::doNothing()
         }
         #endif // !end SERIAL
     }   
+}
+
+void Drive::sendto_car(Mat word,double angle)
+{
+    int dis_x = int(word.at<double>(0,0));
+    int dis_y = int(word.at<double>(1,0));
+    unsigned short send_angle = angle + 32768;
+    unsigned short send_dis_x = dis_x + 32768;
+    unsigned short send_dis_y = dis_y + 32768;
+
+    unsigned char sendBuffer[8];
+    sendBuffer[0] = '#';
+    sendBuffer[1] = (send_angle >> 8) & 0xff;
+    sendBuffer[2] = send_angle & 0xff;
+    sendBuffer[3] = (send_dis_x >> 8) & 0xff;
+    sendBuffer[4] = send_dis_x & 0xff;
+    sendBuffer[5] = (send_dis_y >> 8) & 0xff;
+    sendBuffer[6] = send_dis_y & 0xff;
+    sendBuffer[7] = '!';
+    car_serial.send(sendBuffer, sizeof(sendBuffer));
+
 }
