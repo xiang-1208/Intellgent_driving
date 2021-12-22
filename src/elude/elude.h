@@ -17,10 +17,11 @@ using namespace cv;
 class Eludeing
 {
 public:
-    Eludeing(Mat);
+    Eludeing(VideoCapture);
     void run();
 
 private:
+    VideoCapture car_capture;
     Mat Image;  
     std::mutex mtx;
     chrono::steady_clock::time_point t1;

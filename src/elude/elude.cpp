@@ -2,7 +2,7 @@
 
 // #define SERIAL
 
-Eludeing::Eludeing(Mat src):Image(src)
+Eludeing::Eludeing(VideoCapture src):car_capture(src)
 {
     cout << "elude start" <<endl;
 }
@@ -17,16 +17,23 @@ void Eludeing::run()
 
     //SLAM
     //初始化
-    VideoCapture cap;
-    cap.open("../data/test.mp4");
-    if(!cap.isOpened())//如果视频不能正常打开则返回
-        return;
+    // VideoCapture cap;
+    // cap.open("../data/test.mp4");
+    // if(!cap.isOpened())//如果视频不能正常打开则返回
+    //     return;
 
     Mat img_1;
     Mat img_2;
-    cap>>img_1;
-    cap>>img_2;
-    cap.release();//释放资源
+    int frame = car_capture.get(CV_CAP_PROP_FPS);
+    cout << "frame is " << frame << endl;
+    //int milliseconds = car_capture.get(cv2.CAP_PROP_POS_MSEC);
+    car_capture>>img_1;
+    // for (int i=0;i<60;i++)
+    // {
+    //     car_capture>>img_2;
+    // }
+    car_capture>>img_2;
+    car_capture.release();//释放资源
     assert(img_1.data && img_2.data && "Can not load images!");
 
     // Mat img_1 = imread ("../data/test.jpg",CV_LOAD_IMAGE_COLOR);
@@ -80,7 +87,7 @@ void Eludeing::run()
 
     std::vector<DMatch> good_matches;
     for (int i=0;i<descriptors_1.rows;i++){
-        if (matches[i].distance <= max(2*min_dist,30.0)){
+        if (matches[i].distance <= max(2*min_dist,15.0)){
             good_matches.push_back(matches[i]);
         }
     }

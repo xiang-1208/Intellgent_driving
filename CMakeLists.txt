@@ -11,7 +11,7 @@ project(my_Intelligent_driving)
 #delete the cache to rebuild after changing the options
 option(BUILD_WITH_OPENCV "Build with OpenCV2 for Image related Processing" ON)
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -O3")
+set(CMAKE_CXX_FLAGS "-std=c++11 -O3 -pthread")
 
 ########################
 # find libs & include  #
@@ -39,7 +39,8 @@ endif (BUILD_WITH_OPENCV)
 add_library(my_lib 
 src/drive/drive.cpp
 src/extract/f_extract.cpp
-src/serial/Serial.cpp)
+src/serial/Serial.cpp
+src/elude/elude.cpp)
 add_executable(my_Intelligent_driving src/Intel_dri_main.cpp)
 target_link_libraries(my_Intelligent_driving ${DEP_LIBS})
 target_link_libraries(my_Intelligent_driving my_lib)

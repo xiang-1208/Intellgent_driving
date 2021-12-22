@@ -12,6 +12,14 @@ Drive::Drive()
         else
             cout << "capture open success!" << endl;
     }
+    else
+    {
+        //测试视频
+        if(!car_capture.open("../data/test.mp4"))
+            cout << "video open fail!" << endl;
+        else
+            cout << "video open success!" << endl;       
+    }
     //串口
     #ifdef SERIAL
     if(!car_serial.open("/dev/ttyUSB0",115200,0,8,1)) {
@@ -24,10 +32,11 @@ Drive::Drive()
 
 void Drive::run()
 {
-    while(waitKey(1)!= 27) //esc
+    // while(waitKey(1)!= 27) //esc
     {
         if(state==Follow){
             cout<<"state= Follow"<<endl;
+            doFollowing();
         }
         else if(state==Finding){
             cout<<"state= Finding"<<endl;
@@ -49,10 +58,8 @@ void Drive::run()
 
 void Drive::doPark()
 {
-    /*相机模式(T) or 图片测试模式(F)*/
-    bool RUNING_MOD = false;
-    /*显示调试内容*/
-    bool DEBUGGING_MOD = false or not RUNING_MOD;
+    // /*显示调试内容*/
+    // bool DEBUGGING_MOD = false or not RUNING_MOD;
 
     while (waitKey(1)!=27) {
         #ifdef SERIAL
@@ -73,13 +80,56 @@ void Drive::doPark()
             }
         }
         else
-            //打开单张图片
-            Image = imread("../data/Image2.png");  
+        
+        //打开单张图片
+        Image = imread("../data/Image2.png");  
         Extract my_extract(Image);
         Mat word = my_extract.return_word();
         double raw = my_extract.return_raw();
         sendto_car(word,raw);
     }
+}
+
+void Drive::doFollowing()
+{   
+    static bool thread_flag = true;
+    if (thread_flag)
+    {
+        Eludeing Eluder(car_capture);
+        thread elude_thread(&Eludeing::run,&Eluder);
+        elude_thread.join();
+        thread_flag = false;
+    }
+
+    // /*显示调试内容*/
+    // bool DEBUGGING_MOD = false or not RUNING_MOD;
+
+    // while (waitKey(1)!=27) {
+    //     #ifdef SERIAL
+    //     int n = car_serial.receive(100);
+    //     if ((n > 0) && (car_serial.buf[0] == 'd')) {
+    //         state = Nothing;
+    //         doNothing()
+    //         break;
+    //     }  
+    //     #endif // !end SERIAL
+
+    //     if (RUNING_MOD)
+    //     {
+    //         car_capture >> Image;
+    //         if (Image.empty()) {
+    //             cout << "image empty!" << endl;
+    //             break;
+    //         }
+    //     }
+    //     else
+    //         //打开单张图片
+    //         Image = imread("../data/Image2.png");  
+    //     Extract my_extract(Image);
+    //     Mat word = my_extract.return_word();
+    //     double raw = my_extract.return_raw();
+    //     sendto_car(word,raw);
+    // }
 }
 
 void Drive::doNothing()

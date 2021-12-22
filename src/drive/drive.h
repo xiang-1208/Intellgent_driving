@@ -4,6 +4,8 @@
 #include <opencv2/opencv.hpp>
 #include "../serial/Serial.h"
 #include "../extract/f_extract.h"
+#include "../elude/elude.h"
+#include <thread>
 
 using namespace std;
 using namespace cv;
@@ -17,8 +19,8 @@ public:
     
 private:
     /*相机模式(T) or 图片测试模式(F)*/
-    bool RUNING_MOD = true;
-    STATUS state = Parking;
+    bool RUNING_MOD = false;
+    STATUS state = Follow;
 
     VideoCapture car_capture;
     Serial car_serial;
@@ -26,7 +28,8 @@ private:
 
     void doPark();
     void doNothing();
-    void Drive::sendto_car(Mat,double);
+    void doFollowing();
+    void sendto_car(Mat,double);
 };
 
 #endif //DRIVE_H
