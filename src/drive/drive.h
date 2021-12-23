@@ -5,12 +5,13 @@
 #include "../serial/Serial.h"
 #include "../extract/f_extract.h"
 #include "../elude/elude.h"
+#include "../Initial/Initial.h"
 #include <thread>
 
 using namespace std;
 using namespace cv;
 
-enum STATUS {Follow=0,Finding=1,Parking=2,Nothing=3};
+enum STATUS {Follow=0,Initialing=1,Parking=2,Nothing=3};
 
 class Drive{
 public:
@@ -29,6 +30,7 @@ private:
     void doPark();
     void doNothing();
     void doFollowing();
+    void doInitial();
     void sendto_car(Mat,double);
 };
 

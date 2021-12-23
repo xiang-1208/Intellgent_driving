@@ -27,14 +27,26 @@ void Eludeing::run()
     int frame = car_capture.get(CV_CAP_PROP_FPS);
     cout << "frame is " << frame << endl;
     //int milliseconds = car_capture.get(cv2.CAP_PROP_POS_MSEC);
-    car_capture>>img_1;
-    // for (int i=0;i<60;i++)
-    // {
-    //     car_capture>>img_2;
-    // }
-    car_capture>>img_2;
+    for (int i=0;i<30;i++)
+    {
+        car_capture>>img_1;
+    }
+    // Mat img_1=img_1(Rect(260,30,50,80));
+    // car_capture>>img_1;
+    imwrite ("../data/start.jpg",img_1);
+    for (int i=0;i<600;i++)
+    {
+        car_capture>>img_2;
+    }
+    // Mat img_2=img_2(Rect(440,30,50,80));
+    imwrite ("../data/end.jpg",img_2);
+    // car_capture>>img_2;
     car_capture.release();//释放资源
     assert(img_1.data && img_2.data && "Can not load images!");
+
+    // imshow ("start.jpg",img_1);
+    // imshow ("end.jpg",img_2);
+    // waitKey(0);
 
     // Mat img_1 = imread ("../data/test.jpg",CV_LOAD_IMAGE_COLOR);
     // Mat img_2 = imread ("../data/mask.jpg",CV_LOAD_IMAGE_COLOR);
@@ -49,6 +61,7 @@ void Eludeing::run()
     // destroyAllWindows();
     // mtx.unlock();
 
+    std::vector<KeyPoint> keypoints_1_temp,keypoints_2_temp;
     std::vector<KeyPoint> keypoints_1,keypoints_2;
     Mat descriptors_1,descriptors_2;
     Ptr<FeatureDetector> detector = ORB::create();
@@ -56,8 +69,22 @@ void Eludeing::run()
     Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce-Hamming");
 
     t1 = chrono::steady_clock::now();
-    detector->detect(img_1,keypoints_1);
-    detector->detect(img_2,keypoints_2);
+    detector->detect(img_1,keypoints_1_temp);
+    detector->detect(img_2,keypoints_2_temp);
+
+    for (auto it : keypoints_1_temp)
+    {
+	    if (it.pt.x>260 && it.pt.x<310 && it.pt.y>50 && it.pt.y<130)
+            keypoints_1.push_back(it);
+        else;
+    }
+    for (auto it : keypoints_2_temp)
+    {
+	    if (it.pt.x>440 && it.pt.x<490 && it.pt.y>30 && it.pt.y<110)
+            keypoints_2.push_back(it);
+        else
+            keypoints_2.push_back(it);
+    }
 
     descriptor->compute(img_1,keypoints_1,descriptors_1);
     descriptor->compute(img_2,keypoints_2,descriptors_2);
@@ -65,16 +92,18 @@ void Eludeing::run()
     chrono::duration<double> time_used = chrono::duration_cast<chrono::duration<double>>(t2-t1);
     cout << "ORB用时： " << time_used.count() << "秒" << endl;
 
-    Mat outimg1;
-    drawKeypoints (img_1,keypoints_1,outimg1,Scalar::all(-1),DrawMatchesFlags::DEFAULT);
+    // Mat outimg1;
+    // drawKeypoints (img_1,keypoints_1,outimg1,Scalar::all(-1),DrawMatchesFlags::DEFAULT);
     // imshow ("ORB features",outimg1);
+    // waitKey(0);
 
     vector<DMatch> matches;
-    //t1 = chrono::steady_clock::now();
+    t1 = chrono::steady_clock::now();
     matcher->match(descriptors_1,descriptors_2,matches);
-    //t2 = chrono::steady_clock::now();
-    //time_used = chrono::duration_cast<chrono::duration<double>>(t2-t1);
-    //cout << "match用时： " << time_used.count() << "秒" << endl;
+    t2 = chrono::steady_clock::now();
+    time_used = chrono::duration_cast<chrono::duration<double>>(t2-t1);
+    cout << "match用时： " << time_used.count() << "秒" << endl;
+    cout << "match对： " << matches.size()<< endl;
 
     //匹配点筛选
     auto min_max = minmax_element(matches.begin(),matches.end(),
@@ -87,7 +116,7 @@ void Eludeing::run()
 
     std::vector<DMatch> good_matches;
     for (int i=0;i<descriptors_1.rows;i++){
-        if (matches[i].distance <= max(2*min_dist,15.0)){
+        if (matches[i].distance <= max(2*min_dist,30.0)){
             good_matches.push_back(matches[i]);
         }
     }
@@ -104,26 +133,26 @@ void Eludeing::run()
     cout << "Find " << good_matches.size() << " good matches" << endl;
 
     //估计两张图像间运动
-    Mat R,t;
-    pose_estimatiob_2d2d(keypoints_1, keypoints_2,matches,R,t);
+    // Mat R,t;
+    // pose_estimatiob_2d2d(keypoints_1, keypoints_2,matches,R,t);
 
     //-- 验证E=t^R*scale
-    Mat t_x =
-        (Mat_<double>(3, 3) << 0, -t.at<double>(2, 0), t.at<double>(1, 0),
-        t.at<double>(2, 0), 0, -t.at<double>(0, 0),
-        -t.at<double>(1, 0), t.at<double>(0, 0), 0);
-    cout << "t^R=" << endl << t_x * R << endl;
+    // Mat t_x =
+    //     (Mat_<double>(3, 3) << 0, -t.at<double>(2, 0), t.at<double>(1, 0),
+    //     t.at<double>(2, 0), 0, -t.at<double>(0, 0),
+    //     -t.at<double>(1, 0), t.at<double>(0, 0), 0);
+    // cout << "t^R=" << endl << t_x * R << endl;
 
     //-- 验证对极约束
-    Mat K = (Mat_<double>(3, 3) << 520.9, 0, 325.1, 0, 521.0, 249.7, 0, 0, 1);
-    for (DMatch m: matches) {
-        Point2d pt1 = pixel2cam(keypoints_1[m.queryIdx].pt, K);
-        Mat y1 = (Mat_<double>(3, 1) << pt1.x, pt1.y, 1);
-        Point2d pt2 = pixel2cam(keypoints_2[m.trainIdx].pt, K);
-        Mat y2 = (Mat_<double>(3, 1) << pt2.x, pt2.y, 1);
-        Mat d = y2.t() * t_x * R * y1;
-        cout << "epipolar constraint = " << d << endl;
-    }
+    // Mat K = (Mat_<double>(3, 3) << 520.9, 0, 325.1, 0, 521.0, 249.7, 0, 0, 1);
+    // for (DMatch m: matches) {
+    //     Point2d pt1 = pixel2cam(keypoints_1[m.queryIdx].pt, K);
+    //     Mat y1 = (Mat_<double>(3, 1) << pt1.x, pt1.y, 1);
+    //     Point2d pt2 = pixel2cam(keypoints_2[m.trainIdx].pt, K);
+    //     Mat y2 = (Mat_<double>(3, 1) << pt2.x, pt2.y, 1);
+    //     Mat d = y2.t() * t_x * R * y1;
+    //     cout << "epipolar constraint = " << d << endl;
+    // }
     
     // waitKey(0);
 }

@@ -10,6 +10,8 @@ project(my_Intelligent_driving)
 ########################
 #delete the cache to rebuild after changing the options
 option(BUILD_WITH_OPENCV "Build with OpenCV2 for Image related Processing" ON)
+option(BUILD_WITH_TEST "Build with TEST" OFF)
+message("Build with TEST: " ${BUILD_WITH_TEST})
 
 set(CMAKE_CXX_FLAGS "-std=c++11 -O3 -pthread")
 
@@ -40,7 +42,12 @@ add_library(my_lib
 src/drive/drive.cpp
 src/extract/f_extract.cpp
 src/serial/Serial.cpp
-src/elude/elude.cpp)
-add_executable(my_Intelligent_driving src/Intel_dri_main.cpp)
+src/elude/elude.cpp
+src//Initial/Initial.cpp)
+if (BUILD_WITH_TEST STREQUAL "ON")
+    add_executable(my_Intelligent_driving src/test_main.cpp)
+else()
+    add_executable(my_Intelligent_driving src/Intel_dri_main.cpp)
+endif ()
 target_link_libraries(my_Intelligent_driving ${DEP_LIBS})
 target_link_libraries(my_Intelligent_driving my_lib)

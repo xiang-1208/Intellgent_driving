@@ -31,15 +31,16 @@ Drive::Drive()
 }
 
 void Drive::run()
-{
+{ 
     // while(waitKey(1)!= 27) //esc
     {
         if(state==Follow){
             cout<<"state= Follow"<<endl;
             doFollowing();
         }
-        else if(state==Finding){
+        else if(state==Initialing){
             cout<<"state= Finding"<<endl;
+            doInitial();
         }
         else if(state==Parking){
             cout<<"state= Parking"<<endl;
@@ -66,7 +67,7 @@ void Drive::doPark()
         int n = car_serial.receive(100);
         if ((n > 0) && (car_serial.buf[0] == 'd')) {
             state = Nothing;
-            doNothing()
+            doNothing();
             break;
         }  
         #endif // !end SERIAL
@@ -130,6 +131,37 @@ void Drive::doFollowing()
     //     double raw = my_extract.return_raw();
     //     sendto_car(word,raw);
     // }
+}
+
+void Drive::doInitial()
+{
+    while(true){
+        std::cout<<"waiting for command from stm32"<<std::endl;
+        #ifdef SERIAL
+        int n=car_serial.receive(1);
+        if(n>0 && (car_serial.buf[0]=='i')){
+            Initial* P_initializer = new Initial(car_capture);
+            bool ref = P_initializer->start();
+            if (!ref)
+            {
+                cout << "Initial fail!" <<endl;
+                break;
+            }
+            n=car_serial.receive(2);
+            if(n>0)
+            {
+                bool ref = P_initializer->end(car_serial.buf);
+                if (!ref)
+                {
+                    cout << "Initial fail!" <<endl;
+                    break;
+                }
+            }
+            state=Parking;
+            break;
+        }
+        #endif // !end SERIAL
+    }  
 }
 
 void Drive::doNothing()
