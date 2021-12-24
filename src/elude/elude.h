@@ -8,6 +8,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include "../serial/Serial.h"
 #include <mutex>
+#include <string>
 // #include <chrono>
 
 using namespace std;
@@ -22,8 +23,13 @@ public:
 
 private:
     VideoCapture car_capture;
+    void ComputePyramid(cv::Mat);
     Mat Image;  
     std::mutex mtx;
+    int nlevels = 5;
+    std::vector<float> mvInvScaleFactor;
+    std::vector<cv::Mat> mvImagePyramid;
+    double scaleFactor = 1.2;
     chrono::steady_clock::time_point t1;
     chrono::steady_clock::time_point t2;
     void pose_estimatiob_2d2d(

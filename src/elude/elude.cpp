@@ -5,6 +5,12 @@
 Eludeing::Eludeing(VideoCapture src):car_capture(src)
 {
     cout << "elude start" <<endl;
+    float invScaleFactor = 1.0f/scaleFactor;
+    mvInvScaleFactor.resize(nlevels);
+    mvImagePyramid.resize(nlevels);
+    mvInvScaleFactor[0]=1;
+    for(int i=1; i<nlevels; i++)
+        mvInvScaleFactor[i]=mvInvScaleFactor[i-1]*invScaleFactor;
 }
 
 void Eludeing::run()
@@ -17,27 +23,32 @@ void Eludeing::run()
 
     //SLAM
     //初始化
-    // VideoCapture cap;
-    // cap.open("../data/test.mp4");
-    // if(!cap.isOpened())//如果视频不能正常打开则返回
-    //     return;
+    int frame = car_capture.get(CV_CAP_PROP_FPS);
+    //int milliseconds = car_capture.get(cv2.CAP_PROP_POS_MSEC);
+    cout << "frame is " << frame << endl;
 
     Mat img_1;
     Mat img_2;
-    int frame = car_capture.get(CV_CAP_PROP_FPS);
-    cout << "frame is " << frame << endl;
-    //int milliseconds = car_capture.get(cv2.CAP_PROP_POS_MSEC);
     for (int i=0;i<30;i++)
     {
         car_capture>>img_1;
     }
+    if(img_1.channels()==3)
+        cvtColor(img_1, img_1, CV_RGB2GRAY);
+    imwrite ("../data/start.jpg",img_1);
+    ComputePyramid(img_1);
+    for (int level = 0; level < nlevels; ++level)
+    {
+        imwrite ("../data/"+ to_string(level)+".jpg",mvImagePyramid[level]);
+    }
     // Mat img_1=img_1(Rect(260,30,50,80));
     // car_capture>>img_1;
-    imwrite ("../data/start.jpg",img_1);
     for (int i=0;i<600;i++)
     {
         car_capture>>img_2;
     }
+    if(img_2.channels()==3)
+        cvtColor(img_2, img_2, CV_RGB2GRAY);
     // Mat img_2=img_2(Rect(440,30,50,80));
     imwrite ("../data/end.jpg",img_2);
     // car_capture>>img_2;
@@ -47,9 +58,6 @@ void Eludeing::run()
     // imshow ("start.jpg",img_1);
     // imshow ("end.jpg",img_2);
     // waitKey(0);
-
-    // Mat img_1 = imread ("../data/test.jpg",CV_LOAD_IMAGE_COLOR);
-    // Mat img_2 = imread ("../data/mask.jpg",CV_LOAD_IMAGE_COLOR);
 
     cout << "image's size: " << img_1.size() << endl;
     // resize (img_2, img_2, cv::Size(round(img_2.cols * 0.5), round(img_2.rows * 0.5)));
@@ -205,4 +213,23 @@ Point2d Eludeing::pixel2cam(const Point2d &p, const Mat &K) {
             (p.x - K.at<double>(0, 2)) / K.at<double>(0, 0),
             (p.y - K.at<double>(1, 2)) / K.at<double>(1, 1)
         );
+}
+
+void Eludeing::ComputePyramid(cv::Mat image)
+{
+    for (int level = 0; level < nlevels; ++level)
+    {
+        float scale = mvInvScaleFactor[level];
+        Size sz(cvRound((float)image.cols*scale), cvRound((float)image.rows*scale));
+        cout << sz << endl;
+
+        if( level != 0 )
+        {
+            resize(mvImagePyramid[level-1], mvImagePyramid[level], sz, 0, 0, INTER_LINEAR);
+        }
+        else
+        {
+            mvImagePyramid[level] = image.clone();
+        }
+    }
 }
