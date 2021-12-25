@@ -5,12 +5,34 @@
 Eludeing::Eludeing(VideoCapture src):car_capture(src)
 {
     cout << "elude start" <<endl;
-    float invScaleFactor = 1.0f/scaleFactor;
-    mvInvScaleFactor.resize(nlevels);
-    mvImagePyramid.resize(nlevels);
-    mvInvScaleFactor[0]=1;
-    for(int i=1; i<nlevels; i++)
-        mvInvScaleFactor[i]=mvInvScaleFactor[i-1]*invScaleFactor;
+
+    // int nFeatures = fSettings["ORBextractor.nFeatures"];
+    // float fScaleFactor = fSettings["ORBextractor.scaleFactor"];
+    // int nLevels = fSettings["ORBextractor.nLevels"];
+    // int fastTh = fSettings["ORBextractor.fastTh"];    
+    // int Score = fSettings["ORBextractor.nScoreType"];
+
+    int nFeatures = 1000;
+    float fScaleFactor = 1.2;
+    int nLevels = 8;
+    int fastTh = 20;    
+    int Score = 1;
+
+    mpORBextractor = new ORBextractor(nFeatures,fScaleFactor,nLevels,Score,fastTh);
+    
+    cout << endl  << "ORB Extractor Parameters: " << endl;
+    cout << "- Number of Features: " << nFeatures << endl;
+    cout << "- Scale Levels: " << nLevels << endl;
+    cout << "- Scale Factor: " << fScaleFactor << endl;
+    cout << "- Fast Threshold: " << fastTh << endl;
+    if(Score==0)
+        cout << "- Score: HARRIS" << endl;
+    else
+        cout << "- Score: FAST" << endl;
+
+    // ORB extractor for initialization
+    // Initialization uses only points from the finest scale level
+    mpIniORBextractor = new ORBextractor(nFeatures*2,1.2,8,Score,fastTh);    
 }
 
 void Eludeing::run()
@@ -23,95 +45,68 @@ void Eludeing::run()
 
     //SLAM
     //初始化
-    int frame = car_capture.get(CV_CAP_PROP_FPS);
-    //int milliseconds = car_capture.get(cv2.CAP_PROP_POS_MSEC);
-    cout << "frame is " << frame << endl;
 
-    Mat img_1;
-    Mat img_2;
+
+    int nframe = car_capture.get(CV_CAP_PROP_FPS);
+    //int milliseconds = car_capture.get(cv2.CAP_PROP_POS_MSEC);
+    cout << "frame is " << nframe << endl;
+
+    Mat img_1,img_2;
+
+    // // Mat img_1=img_1(Rect(260,30,50,80));
+    // // car_capture>>img_1;
     for (int i=0;i<30;i++)
     {
         car_capture>>img_1;
     }
     if(img_1.channels()==3)
         cvtColor(img_1, img_1, CV_RGB2GRAY);
-    imwrite ("../data/start.jpg",img_1);
-    ComputePyramid(img_1);
-    for (int level = 0; level < nlevels; ++level)
-    {
-        imwrite ("../data/"+ to_string(level)+".jpg",mvImagePyramid[level]);
-    }
-    // Mat img_1=img_1(Rect(260,30,50,80));
-    // car_capture>>img_1;
+    // imwrite ("../data/start.jpg",img_1);
+    if(mState==WORKING)
+        mCurrentFrame = Frame(img_1,mpORBextractor,mK);
+    Mat outimg1;
+    drawKeypoints (img_1,mCurrentFrame.mvKeys,outimg1,Scalar::all(-1),DrawMatchesFlags::DEFAULT);
+    imwrite ("../out/outimg1.jpg",outimg1);
+
     for (int i=0;i<600;i++)
     {
         car_capture>>img_2;
     }
     if(img_2.channels()==3)
         cvtColor(img_2, img_2, CV_RGB2GRAY);
-    // Mat img_2=img_2(Rect(440,30,50,80));
-    imwrite ("../data/end.jpg",img_2);
-    // car_capture>>img_2;
+    // // Mat img_2=img_2(Rect(440,30,50,80));
+    // // car_capture>>img_2;
+    if(mState==WORKING)
+        mLastFrame = Frame(img_2,mpORBextractor,mK);
+    Mat outimg2;
+    drawKeypoints (img_2,mLastFrame.mvKeys,outimg2,Scalar::all(-1),DrawMatchesFlags::DEFAULT);
+    imwrite ("../out/outimg2.jpg",outimg2);
     car_capture.release();//释放资源
     assert(img_1.data && img_2.data && "Can not load images!");
 
-    // imshow ("start.jpg",img_1);
-    // imshow ("end.jpg",img_2);
-    // waitKey(0);
-
-    cout << "image's size: " << img_1.size() << endl;
-    // resize (img_2, img_2, cv::Size(round(img_2.cols * 0.5), round(img_2.rows * 0.5)));
-    
-    // mtx.lock();
-    // imshow ("img_1",img_1);
-    // imshow ("img_2",img_2);
-    // waitKey(1);
-    // destroyAllWindows();
-    // mtx.unlock();
-
-    std::vector<KeyPoint> keypoints_1_temp,keypoints_2_temp;
-    std::vector<KeyPoint> keypoints_1,keypoints_2;
-    Mat descriptors_1,descriptors_2;
-    Ptr<FeatureDetector> detector = ORB::create();
-    Ptr<DescriptorExtractor> descriptor = ORB::create();
     Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce-Hamming");
 
-    t1 = chrono::steady_clock::now();
-    detector->detect(img_1,keypoints_1_temp);
-    detector->detect(img_2,keypoints_2_temp);
-
-    for (auto it : keypoints_1_temp)
-    {
-	    if (it.pt.x>260 && it.pt.x<310 && it.pt.y>50 && it.pt.y<130)
-            keypoints_1.push_back(it);
-        else;
-    }
-    for (auto it : keypoints_2_temp)
-    {
-	    if (it.pt.x>440 && it.pt.x<490 && it.pt.y>30 && it.pt.y<110)
-            keypoints_2.push_back(it);
-        else
-            keypoints_2.push_back(it);
-    }
-
-    descriptor->compute(img_1,keypoints_1,descriptors_1);
-    descriptor->compute(img_2,keypoints_2,descriptors_2);
-    t2 = chrono::steady_clock::now();
-    chrono::duration<double> time_used = chrono::duration_cast<chrono::duration<double>>(t2-t1);
-    cout << "ORB用时： " << time_used.count() << "秒" << endl;
-
-    // Mat outimg1;
-    // drawKeypoints (img_1,keypoints_1,outimg1,Scalar::all(-1),DrawMatchesFlags::DEFAULT);
-    // imshow ("ORB features",outimg1);
-    // waitKey(0);
+    // for (auto it : keypoints_1_temp)
+    // {
+	//     if (it.pt.x>260 && it.pt.x<310 && it.pt.y>50 && it.pt.y<130)
+    //         keypoints_1.push_back(it);
+    //     else;
+    // }
+    // for (auto it : keypoints_2_temp)
+    // {
+	//     if (it.pt.x>440 && it.pt.x<490 && it.pt.y>30 && it.pt.y<110)
+    //         keypoints_2.push_back(it);
+    //     else
+    //         keypoints_2.push_back(it);
+    // }
 
     vector<DMatch> matches;
-    t1 = chrono::steady_clock::now();
-    matcher->match(descriptors_1,descriptors_2,matches);
-    t2 = chrono::steady_clock::now();
-    time_used = chrono::duration_cast<chrono::duration<double>>(t2-t1);
-    cout << "match用时： " << time_used.count() << "秒" << endl;
-    cout << "match对： " << matches.size()<< endl;
+    // t1 = chrono::steady_clock::now();
+    matcher->match(mCurrentFrame.mDescriptors,mLastFrame.mDescriptors,matches);
+    // t2 = chrono::steady_clock::now();
+    // time_used = chrono::duration_cast<chrono::duration<double>>(t2-t1);
+    // cout << "match用时： " << time_used.count() << "秒" << endl;
+    // cout << "match对： " << matches.size()<< endl;
 
     //匹配点筛选
     auto min_max = minmax_element(matches.begin(),matches.end(),
@@ -123,26 +118,25 @@ void Eludeing::run()
     printf("--Min dist : %f\n",min_dist);
 
     std::vector<DMatch> good_matches;
-    for (int i=0;i<descriptors_1.rows;i++){
-        if (matches[i].distance <= max(2*min_dist,30.0)){
+    for (int i=0;i<matches.size();i++){
+        if (matches[i].distance <= min(2*min_dist,20.0)){
             good_matches.push_back(matches[i]);
         }
     }
 
     Mat img_match;
     Mat img_goodmatch;
-    drawMatches(img_1,keypoints_1,img_2,keypoints_2,matches,img_match);
-    drawMatches(img_1,keypoints_1,img_2,keypoints_2,good_matches,img_goodmatch);
+    drawMatches(img_1,mCurrentFrame.mvKeys,img_2,mLastFrame.mvKeys,matches,img_match);
+    drawMatches(img_1,mCurrentFrame.mvKeys,img_2,mLastFrame.mvKeys,good_matches,img_goodmatch);
     imwrite ("../out/img_goodmatch.jpg",img_goodmatch);
     // imshow ("all matches",img_match);
     // imshow ("good matches",img_goodmatch);
-    cout << "elude finish" << endl;
 
     cout << "Find " << good_matches.size() << " good matches" << endl;
 
-    //估计两张图像间运动
-    // Mat R,t;
-    // pose_estimatiob_2d2d(keypoints_1, keypoints_2,matches,R,t);
+    // 估计两张图像间运动
+    Mat R,t;
+    pose_estimatiob_2d2d(mCurrentFrame.mvKeys, mLastFrame.mvKeys,good_matches,R,t);
 
     //-- 验证E=t^R*scale
     // Mat t_x =
@@ -213,23 +207,4 @@ Point2d Eludeing::pixel2cam(const Point2d &p, const Mat &K) {
             (p.x - K.at<double>(0, 2)) / K.at<double>(0, 0),
             (p.y - K.at<double>(1, 2)) / K.at<double>(1, 1)
         );
-}
-
-void Eludeing::ComputePyramid(cv::Mat image)
-{
-    for (int level = 0; level < nlevels; ++level)
-    {
-        float scale = mvInvScaleFactor[level];
-        Size sz(cvRound((float)image.cols*scale), cvRound((float)image.rows*scale));
-        cout << sz << endl;
-
-        if( level != 0 )
-        {
-            resize(mvImagePyramid[level-1], mvImagePyramid[level], sz, 0, 0, INTER_LINEAR);
-        }
-        else
-        {
-            mvImagePyramid[level] = image.clone();
-        }
-    }
 }

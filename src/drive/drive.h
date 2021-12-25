@@ -11,7 +11,7 @@
 using namespace std;
 using namespace cv;
 
-enum STATUS {Follow=0,Initialing=1,Parking=2,Nothing=3};
+enum STATUS {Follow=0,Finding=1,Parking=2,Nothing=3};
 
 class Drive{
 public:

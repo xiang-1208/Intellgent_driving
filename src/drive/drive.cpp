@@ -32,28 +32,21 @@ Drive::Drive()
 
 void Drive::run()
 { 
-    // while(waitKey(1)!= 27) //esc
-    {
-        if(state==Follow){
-            cout<<"state= Follow"<<endl;
-            doFollowing();
-        }
-        else if(state==Initialing){
-            cout<<"state= Finding"<<endl;
-            doInitial();
-        }
-        else if(state==Parking){
-            cout<<"state= Parking"<<endl;
-            doPark();
-        }
-        else if(state==Nothing) {
-            cout<<"state= Nothing"<<endl;
-            doNothing();
-        }
-        else{
-            cout<<"state error"<<endl;
-            exit(-1);
-        }
+    if(state==Follow){
+        cout<<"state= Follow"<<endl;
+        doFollowing();
+    }
+    else if(state==Parking){
+        cout<<"state= Parking"<<endl;
+        doPark();
+    }
+    else if(state==Nothing) {
+        cout<<"state= Nothing"<<endl;
+        doNothing();
+    }
+    else{
+        cout<<"state error"<<endl;
+        exit(-1);
     }
 }
 

@@ -7,6 +7,8 @@
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include "../serial/Serial.h"
+#include "../Frame/Frame.h"
+#include "../ORBextractor/ORBextractor.h"
 #include <mutex>
 #include <string>
 // #include <chrono>
@@ -14,7 +16,7 @@
 using namespace std;
 using namespace cv;
 
-
+enum {WORKING=0,INiTIAL=1};
 class Eludeing
 {
 public:
@@ -22,14 +24,16 @@ public:
     void run();
 
 private:
+    int mState=WORKING;
+    Frame mCurrentFrame;
+    Frame mLastFrame;
+    cv::Mat mK;
     VideoCapture car_capture;
-    void ComputePyramid(cv::Mat);
     Mat Image;  
     std::mutex mtx;
-    int nlevels = 5;
-    std::vector<float> mvInvScaleFactor;
+    ORBextractor* mpORBextractor;
+    ORBextractor* mpIniORBextractor;
     std::vector<cv::Mat> mvImagePyramid;
-    double scaleFactor = 1.2;
     chrono::steady_clock::time_point t1;
     chrono::steady_clock::time_point t2;
     void pose_estimatiob_2d2d(

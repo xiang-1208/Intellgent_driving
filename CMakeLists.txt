@@ -11,6 +11,7 @@ project(my_Intelligent_driving)
 #delete the cache to rebuild after changing the options
 option(BUILD_WITH_OPENCV "Build with OpenCV2 for Image related Processing" ON)
 option(BUILD_WITH_TEST "Build with TEST" OFF)
+option(BUILD_WITH_VISUAL "BUILD with visual" OFF)
 message("Build with TEST: " ${BUILD_WITH_TEST})
 
 set(CMAKE_CXX_FLAGS "-std=c++11 -O3 -pthread")
@@ -43,7 +44,10 @@ src/drive/drive.cpp
 src/extract/f_extract.cpp
 src/serial/Serial.cpp
 src/elude/elude.cpp
-src//Initial/Initial.cpp)
+src//Initial/Initial.cpp
+src/extract/f_extract.cpp
+src/Frame/Frame.cpp
+src/ORBextractor/ORBextractor.cpp)
 if (BUILD_WITH_TEST STREQUAL "ON")
     add_executable(my_Intelligent_driving src/test_main.cpp)
 else()
