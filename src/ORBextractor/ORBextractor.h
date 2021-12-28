@@ -20,7 +20,7 @@ public:
     
     enum {HARRIS_SCORE=0, FAST_SCORE=1 };
 
-    ORBextractor(int nfeatures = 1000, float scaleFactor = 1.2f, int nlevels = 8, int scoreType=FAST_SCORE, int fastTh = 20);
+    ORBextractor(float scaleFactor = 1.2f, int nlevels = 8, int scoreType=FAST_SCORE, int fastTh = 20);
 
     ~ORBextractor(){}
 
@@ -39,7 +39,6 @@ protected:
     void ComputePyramid(cv::Mat image);
     void ComputeKeyPoints(std::vector<std::vector<cv::KeyPoint> >& allKeypoints);
 
-    int nfeatures;
     double scaleFactor;
     int nlevels;
     int scoreType;

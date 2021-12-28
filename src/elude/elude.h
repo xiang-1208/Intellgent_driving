@@ -16,7 +16,8 @@
 using namespace std;
 using namespace cv;
 
-enum {WORKING=0,INiTIAL=1};
+enum {WORKING=0,INiTAIL=1};
+
 class Eludeing
 {
 public:

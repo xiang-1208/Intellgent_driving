@@ -12,16 +12,14 @@ Eludeing::Eludeing(VideoCapture src):car_capture(src)
     // int fastTh = fSettings["ORBextractor.fastTh"];    
     // int Score = fSettings["ORBextractor.nScoreType"];
 
-    int nFeatures = 1000;
     float fScaleFactor = 1.2;
     int nLevels = 8;
     int fastTh = 20;    
     int Score = 1;
 
-    mpORBextractor = new ORBextractor(nFeatures,fScaleFactor,nLevels,Score,fastTh);
+    mpORBextractor = new ORBextractor(fScaleFactor,nLevels,Score,fastTh);
     
     cout << endl  << "ORB Extractor Parameters: " << endl;
-    cout << "- Number of Features: " << nFeatures << endl;
     cout << "- Scale Levels: " << nLevels << endl;
     cout << "- Scale Factor: " << fScaleFactor << endl;
     cout << "- Fast Threshold: " << fastTh << endl;
@@ -32,7 +30,7 @@ Eludeing::Eludeing(VideoCapture src):car_capture(src)
 
     // ORB extractor for initialization
     // Initialization uses only points from the finest scale level
-    mpIniORBextractor = new ORBextractor(nFeatures*2,1.2,8,Score,fastTh);    
+    mpIniORBextractor = new ORBextractor(1.2,1,Score,fastTh);    
 }
 
 void Eludeing::run()
@@ -55,15 +53,16 @@ void Eludeing::run()
 
     // // Mat img_1=img_1(Rect(260,30,50,80));
     // // car_capture>>img_1;
-    for (int i=0;i<30;i++)
-    {
-        car_capture>>img_1;
-    }
+    // for (int i=0;i<30;i++)
+    // {
+    //     car_capture>>img_1;
+    // }
+    img_1 = imread("../data/mask.jpg");
     if(img_1.channels()==3)
         cvtColor(img_1, img_1, CV_RGB2GRAY);
     // imwrite ("../data/start.jpg",img_1);
     if(mState==WORKING)
-        mCurrentFrame = Frame(img_1,mpORBextractor,mK);
+        mCurrentFrame = Frame(img_1,mpIniORBextractor,mK);
     Mat outimg1;
     drawKeypoints (img_1,mCurrentFrame.mvKeys,outimg1,Scalar::all(-1),DrawMatchesFlags::DEFAULT);
     imwrite ("../out/outimg1.jpg",outimg1);
@@ -119,7 +118,7 @@ void Eludeing::run()
 
     std::vector<DMatch> good_matches;
     for (int i=0;i<matches.size();i++){
-        if (matches[i].distance <= min(2*min_dist,20.0)){
+        if (matches[i].distance <= max(1.8*min_dist,10.0)){
             good_matches.push_back(matches[i]);
         }
     }

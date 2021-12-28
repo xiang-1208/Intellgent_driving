@@ -1,8 +1,8 @@
 #include "ORBextractor.h"
 
-ORBextractor::ORBextractor(int _nfeatures, float _scaleFactor, int _nlevels, int _scoreType,
+ORBextractor::ORBextractor(float _scaleFactor, int _nlevels, int _scoreType,
          int _fastTh):
-    nfeatures(_nfeatures), scaleFactor(_scaleFactor), nlevels(_nlevels),
+    scaleFactor(_scaleFactor), nlevels(_nlevels),
     scoreType(_scoreType), fastTh(_fastTh)
 {
     mvScaleFactor.resize(nlevels);
