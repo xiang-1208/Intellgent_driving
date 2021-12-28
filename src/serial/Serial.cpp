@@ -1,205 +1,156 @@
 #include "Serial.h"
 
-#include <iostream>
-
-#include <stdio.h>
-#include <stdlib.h>    
-#include <string.h>
-#include <unistd.h>    
-#include <sys/types.h>  
-#include <sys/stat.h>   
-#include <fcntl.h>      
-#include <termios.h>  
-#include <errno.h>
-
 Serial::Serial()
 {
 }
 
 Serial::~Serial()
 {
+    close(fd);
+}
+int Serial::set_interface_attribs(int fd, int speed, int parity)
+{
+    struct termios tty;
+    memset(&tty, 0, sizeof tty);
+    if (tcgetattr(fd, &tty) != 0)
+    {
+        // error_message ("error %d from tcgetattr", errno);
+        return -1;
+    }
 
+    cfsetospeed(&tty, speed);
+    cfsetispeed(&tty, speed);
+
+    tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8; // 8-bit chars
+    // disable IGNBRK for mismatched speed tests; otherwise receive break
+    // as \000 chars
+    tty.c_iflag &= ~IGNBRK; // disable break processing
+    tty.c_lflag = 0;        // no signaling chars, no echo,
+    // no canonical processing
+    tty.c_oflag = 0;     // no remapping, no delays
+    tty.c_cc[VMIN] = 0;  // read doesn't block
+    tty.c_cc[VTIME] = 1; // 0.5 seconds read timeout
+
+    tty.c_iflag &= ~(IXON | IXOFF | IXANY); // shut off xon/xoff ctrl
+
+    tty.c_cflag |= (CLOCAL | CREAD); // ignore modem controls,
+    // enable reading
+    tty.c_cflag &= ~(PARENB | PARODD); // shut off parity
+    tty.c_cflag |= parity;
+    tty.c_cflag &= ~CSTOPB;
+    //    tty.c_cflag |= CSTOPB;
+
+    tty.c_cflag &= ~CRTSCTS;
+
+    if (tcsetattr(fd, TCSANOW, &tty) != 0)
+    {
+        // error_message ("error %d from tcsetattr", errno);
+        return -1;
+    }
+    return 0;
 }
 
-bool Serial::open(const char* portname, int baudrate, char parity, char databit, char stopbit, char synchronizeflag)
+void Serial::set_blocking(int fd, int should_block)
 {
-    // 打开串口
-    pHandle[0] = -1;
-    // 以 读写、不阻塞 方式打开
-    pHandle[0] = ::open(portname,O_RDWR|O_NOCTTY|O_NONBLOCK);
-    
-    // 打开失败，则打印失败信息，返回false
-    if(pHandle[0] == -1)
+    struct termios tty;
+    memset(&tty, 0, sizeof tty);
+    if (tcgetattr(fd, &tty) != 0)
     {
-        std::cout << portname << " open failed , may be you need 'sudo' permission." << std::endl;
-        return false;
+        //        error_message ("error %d from tggetattr", errno);
+        return;
     }
 
-    // 设置串口参数
-    // 创建串口参数对象
-    struct termios options;
-    // 先获得串口的当前参数
-    if(tcgetattr(pHandle[0],&options) < 0)
-    {
-        std::cout << portname << " open failed , get serial port attributes failed." << std::endl;
-        return false;
-    }
+    tty.c_cc[VMIN] = should_block ? 1 : 0;
+    tty.c_cc[VTIME] = 1; // 0.5 seconds read timeout
 
-    // 设置波特率
-    switch(baudrate)
-    {
-        case 4800:
-            cfsetispeed(&options,B4800);
-            cfsetospeed(&options,B4800);
-            break;
-        case 9600:
-            cfsetispeed(&options,B9600);
-            cfsetospeed(&options,B9600);
-            break;   
-        case 19200:
-            cfsetispeed(&options,B19200);
-            cfsetospeed(&options,B19200);
-            break;
-        case 38400:
-            cfsetispeed(&options,B38400);
-            cfsetospeed(&options,B38400);
-            break;
-        case 57600:
-            cfsetispeed(&options,B57600);
-            cfsetospeed(&options,B57600);
-            break;
-        case 115200:
-            cfsetispeed(&options,B115200);
-            cfsetospeed(&options,B115200);
-            break;
-        default:
-            std::cout << portname << " open failed , unkown baudrate , only support 4800,9600,19200,38400,57600,115200." << std::endl;
-            return false;
-    }
-
-    // 设置校验位
-    switch(parity)
-    {
-        // 无校验
-        case 0:
-            options.c_cflag &= ~PARENB;//PARENB：产生奇偶位，执行奇偶校验
-            options.c_cflag &= ~INPCK;//INPCK：使奇偶校验起作用
-            break;
-        // 设置奇校验
-        case 1:
-            options.c_cflag |= PARENB;//PARENB：产生奇偶位，执行奇偶校验
-            options.c_cflag |= PARODD;//PARODD：若设置则为奇校验,否则为偶校验
-            options.c_cflag |= INPCK;//INPCK：使奇偶校验起作用
-            options.c_cflag |= ISTRIP;//ISTRIP：若设置则有效输入数字被剥离7个字节，否则保留全部8位
-            break;
-        // 设置偶校验
-        case 2:
-            options.c_cflag |= PARENB;//PARENB：产生奇偶位，执行奇偶校验
-            options.c_cflag &= ~PARODD;//PARODD：若设置则为奇校验,否则为偶校验
-            options.c_cflag |= INPCK;//INPCK：使奇偶校验起作用
-            options.c_cflag |= ISTRIP;//ISTRIP：若设置则有效输入数字被剥离7个字节，否则保留全部8位
-            break;
-        default:
-            std::cout << portname << " open failed , unkown parity ." << std::endl;
-            return false;
-    }
-
-    // 设置数据位
-    switch(databit)
-    {
-        case 5:
-            options.c_cflag &= ~CSIZE;//屏蔽其它标志位
-            options.c_cflag |= CS5;
-            break;
-        case 6:
-            options.c_cflag &= ~CSIZE;//屏蔽其它标志位
-            options.c_cflag |= CS6;
-            break;
-        case 7:
-            options.c_cflag &= ~CSIZE;//屏蔽其它标志位
-            options.c_cflag |= CS7;
-            break;
-        case 8:
-            options.c_cflag &= ~CSIZE;//屏蔽其它标志位
-            options.c_cflag |= CS8;
-            break;
-        default:
-            std::cout << portname << " open failed , unkown databit ." << std::endl;
-            return false;
-    }
-
-    // 设置停止位
-    switch(stopbit)
-    {
-        case 1:
-            options.c_cflag &= ~CSTOPB;//CSTOPB：使用1位停止位
-            break;
-        case 2:
-            options.c_cflag |= CSTOPB;//CSTOPB：使用2位停止位
-            break;
-        default:
-            std::cout << portname << " open failed , unkown stopbit ." << std::endl;
-            return false;
-    }
-
-    // 激活新配置
-    if((tcsetattr(pHandle[0],TCSANOW,&options))!=0) 
-    { 
-        std::cout << portname << " open failed , can not complete set attributes ." << std::endl;
-        return false; 
-    } 
-
-    return true;
+    if (tcsetattr(fd, TCSANOW, &tty) != 0)
+        ;
+    //("error %d setting term attributes", errno);
 }
 
-void Serial::close()
+int Serial::init(int num)
 {
-    if(pHandle[0] != -1)
+    char *portname = strdup("/dev/ttyUSB0");
+    portname[11] = num + '0';
+    int fd = open(portname, O_RDWR | O_NOCTTY | O_SYNC);
+    if (fd < 0)
     {
-        ::close(pHandle[0]);
+        printf("error %d opening %s: %s\n", errno, portname, strerror(errno));
+        return -1;
     }
+    set_interface_attribs(fd, B115200, 0); // set speed to 115,200 bps, 8n1 (no parity)
+    set_blocking(fd, 0);                   // set no blocking
+    return fd;
 }
-
-int Serial::send(const void *buf,int len)
+bool Serial::open_port()
 {
-    int sendCount = 0;
-    if(pHandle[0] != -1)
-    {   
-        // 将 buf 和 len 转换成api要求的格式
-        const char *buffer = (char*)buf;
-        size_t length = len;
-        // 已写入的数据个数
-        ssize_t tmp;
-
-        while(length > 0)
+    int i = 0;
+    for (; i < 10; i++)
+    {
+        fd = init(i);
+        if (fd > 0)
         {
-            if((tmp = write(pHandle[0], buffer, length)) <= 0)
-            {
-                if(tmp < 0&&errno == EINTR)
-                {
-                    tmp = 0;
-                }
-                else
-                {
-                    break;
-                }
-            }
-            length -= tmp;
-            buffer += tmp;
+            std::cout << "init serial port:" << fd << " sucess" << std::endl;
+            break;
         }
-
-        sendCount = len - length;
     }
-   
-    return sendCount;
+    if (i == 10)
+    {
+        std::cout << "fail to open serial" << std::endl;
+        return false;
+    }
+    else
+        return true;
 }
 
-int Serial::receive(int maxlen)
+int Serial::receive()
 {
-    int receiveCount = ::read(pHandle[0],buf,maxlen);
-    if(receiveCount < 0)
-    {
-        receiveCount = 0;
-    }
-    return receiveCount;
+    int fd = this->fd;
+    int n = read(fd, buf, sizeof(buf));
+    return n;
+}
+
+int Serial::send(unsigned char *str, int len)
+{
+    int n = write(this->fd, str, len);
+    return n;
+}
+
+void Serial::send_embed(double angle_x, double angle_y, int freq)
+{
+    short send_x = (short)(angle_x / 360 * 8192);
+    short send_y = (short)(angle_y / 360 * 8192);
+    send_x = send_x + 2048;
+    send_y = send_y + 2048;
+
+    unsigned char sendBuffer[10];
+    sendBuffer[0] = '!';
+    sendBuffer[1] = (send_y >> 8) & 0xff;
+    sendBuffer[2] = send_y & 0xff;
+    sendBuffer[3] = (send_x >> 8) & 0xff;
+    sendBuffer[4] = send_x & 0xff;
+    sendBuffer[5] = 0x01;
+    sendBuffer[6] = '#';
+
+    std::cout << "send_y:\t" << send_y << std::endl;
+
+    this->send(sendBuffer, sizeof(sendBuffer));
+}
+
+void Serial::send_AP(double angle, double dis_x, double dis_y)
+{
+    unsigned short send_angle = angle + 32768;
+    unsigned short send_dis_x = dis_x + 32768;
+    unsigned short send_dis_y = dis_y + 32768;
+
+    unsigned char sendBuffer[8];
+    sendBuffer[0] = '#';
+    sendBuffer[1] = (send_angle >> 8) & 0xff;
+    sendBuffer[2] = send_angle & 0xff;
+    sendBuffer[3] = (send_dis_x >> 8) & 0xff;
+    sendBuffer[4] = send_dis_x & 0xff;
+    sendBuffer[5] = (send_dis_y >> 8) & 0xff;
+    sendBuffer[6] = send_dis_y & 0xff;
+    sendBuffer[7] = '!';
+    this->send(sendBuffer, sizeof(sendBuffer));
 }

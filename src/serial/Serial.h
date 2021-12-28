@@ -1,49 +1,32 @@
-﻿#ifndef _SERIAL_H
-#define _SERIAL_H
-
-/*
-	作者：欧阳伟
-	日期：2017-12-14
-	类名：WZSerialPort
-	用途：串口读写
-*/
-
-/*
-	使用者：汪潇翔
-	日期：2021-11-18
-	类名：Serial
-	用途：串口读写
-*/
+﻿#ifndef BIGBUFFER_SERIAL_H
+#define BIGBUFFER_SERIAL_H
+#include <errno.h>
+#include <fcntl.h>
+#include <string.h>
+#include <termios.h>
+#include <unistd.h>
+#include <iostream>
 
 class Serial
 {
-public:
-	Serial();
-	~Serial();
+  public:
+    int fd;
+    char buf[1];
 
-	char buf[1];
+  public:
+    Serial();
+    ~Serial();
+    int init(int num);
+    bool open_port();
 
-	// 打开串口,成功返回true，失败返回false
-	// portname(串口名): 在Windows下是"COM1""COM2"等，在Linux下是"/dev/ttyS1"等
-	// baudrate(波特率): 9600、19200、38400、43000、56000、57600、115200 
-	// parity(校验位): 0为无校验，1为奇校验，2为偶校验，3为标记校验（仅适用于windows)
-	// databit(数据位): 4-8(windows),5-8(linux)，通常为8位
-	// stopbit(停止位): 1为1位停止位，2为2位停止位,3为1.5位停止位
-	// synchronizeflag(同步、异步,仅适用与windows): 0为异步，1为同步
-	bool open(const char* portname, int baudrate, char parity, char databit, char stopbit, char synchronizeflag=1);
+    int receive();
+    int send(unsigned char *str, int n);
 
-	//关闭串口，参数待定
-	void close();
+    void send_embed(double angle_x, double angle_y, int freq);
+    void send_AP(double angle, double dis_x, double dis_y);
 
-	//发送数据或写数据，成功返回发送数据长度，失败返回0
-	int send(const void *buf,int len);
-
-	//接受数据或读数据，成功返回读取实际数据的长度，失败返回0
-	int receive(int maxlen);
-
-private:
-	int pHandle[16];
-	char synchronizeflag;
+  private:
+    int set_interface_attribs(int fd, int speed, int parity);
+    void set_blocking(int fd, int should_block);
 };
-
-#endif
+#endif //BIGBUFFER_SERIAL_H

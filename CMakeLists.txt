@@ -49,7 +49,6 @@ else()
     src/extract/f_extract.cpp
     src/serial/Serial.cpp
     src/elude/elude.cpp
-    src//Initial/Initial.cpp
     src/extract/f_extract.cpp
     src/Frame/Frame.cpp
     src/ORBextractor/ORBextractor.cpp)

@@ -8,7 +8,7 @@ using namespace std;
 bool find_elude(vector<vector<Point>> contours,double& distance);
 void sendto_car(bool,double,double,Serial&);
 
-// #define SERIAL
+#define SERIAL
 
 int main ()
 {
@@ -19,15 +19,15 @@ int main ()
 	vector<Vec4i> hierarchy;
     #ifdef SERIAL
     Serial car_serial;
-    if(!car_serial.open("/dev/ttyUSB0",115200,0,8,1)) {
+    if(!car_serial.open_port()) {
         cout << "open port fail" << endl;
         exit(-1);
     }
     #endif // !end SERIAL
     RNG rng(0);
     bool flag = false;
-    if(!car_capture.open(0))
-    // if(!car_capture.open("../data/test.mp4"))
+    // if(!car_capture.open(0))
+    if(!car_capture.open("../data/test.mp4"))
         cout << "video open fail!" << endl;
     else
         cout << "video open success!" << endl;
@@ -86,13 +86,13 @@ int main ()
                     Scalar color = Scalar(rng.uniform(0,255), rng.uniform(0,255), rng.uniform(0,255));
                     drawContours(dst, contours, i, color, 2, 8, hierarchy, 0, Point(0,0));
                 }
-                //imshow("output",dst);
+                imshow("output",dst);
                 double distance;
                 flag = find_elude(contours,distance);
                 img_num ++;
                 putText(img,"distance"+to_string(distance),Point(50,60),FONT_HERSHEY_SIMPLEX,1,Scalar(0,0,0),4,8);//在图片上写文字
                 imwrite("../out/"+to_string(img_num)+".jpg",img);
-                //waitKey(1000);
+                waitKey(1000);
             }
         }
 
@@ -174,20 +174,20 @@ void sendto_car(bool flag,double dis_x,double angle,Serial &car_serial)
     unsigned short send_angle = angle + 32768;
     unsigned short send_dis_x = dis_x + 32768;
 
-    unsigned char sendBuffer[7];
+    unsigned char sendBuffer[8];
     sendBuffer[0] = '#';
     if (flag)
         // 到达需要转向的距离
-        sendBuffer[1] = 'T';
+        sendBuffer[1] = 0x01;
     else
         // 未到达需要转向的距离
-        sendBuffer[1] = 'F';
-    sendBuffer[2] = (send_dis_x >> 8) & 0xff;
-    sendBuffer[3] = send_dis_x & 0xff;
-    sendBuffer[4] = (send_angle >> 8) & 0xff;
-    sendBuffer[5] = send_angle & 0xff;
-    sendBuffer[6] = '!';
+        sendBuffer[1] = 0x00;
+    sendBuffer[2] = 0xff;
+    sendBuffer[3] = (send_dis_x >> 8) & 0xff;
+    sendBuffer[4] = send_dis_x & 0xff;
+    sendBuffer[5] = (send_angle >> 8) & 0xff;
+    sendBuffer[6] = send_angle & 0xff;
+    sendBuffer[7] = '!';
     car_serial.send(sendBuffer, sizeof(sendBuffer));
 }
-
 
