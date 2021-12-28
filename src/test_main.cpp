@@ -1,11 +1,12 @@
 #include <opencv2/opencv.hpp> 
 #include "serial/Serial.h"
+#include <string>
 
 using namespace cv;
 using namespace std;
 
-bool find_elude(vector<vector<Point>> contours);
-void sendto_car(bool,double,double,Serial);
+bool find_elude(vector<vector<Point>> contours,double& distance);
+void sendto_car(bool,double,double,Serial&);
 
 // #define SERIAL
 
@@ -25,7 +26,8 @@ int main ()
     #endif // !end SERIAL
     RNG rng(0);
     bool flag = false;
-    if(!car_capture.open("../data/test.mp4"))
+    if(!car_capture.open(0))
+    // if(!car_capture.open("../data/test.mp4"))
         cout << "video open fail!" << endl;
     else
         cout << "video open success!" << endl;
@@ -34,6 +36,7 @@ int main ()
     // img = imread("../data/end.jpg");
     // imshow ("init",img);
     // setMouseCallback("init", on_mouse, &img);
+    int img_num = 0;
     while (true) 
     {
         static int num = 0;
@@ -51,7 +54,7 @@ int main ()
             img=img(Rect(0,45,640,435));
             // img = imread("../data/Image2.png");
             if(img.channels()==3)
-                cvtColor(img, img, CV_RGB2HSV);
+                cvtColor(img, img_end, CV_RGB2HSV);
             // imshow ("init",img);
             HSVrange[0] = HSV_int[0] - HSV_int[3];
             HSVrange[1] = HSV_int[0] + HSV_int[3];
@@ -60,7 +63,7 @@ int main ()
             HSVrange[4] = HSV_int[2] - HSV_int[3];
             HSVrange[5] = HSV_int[2] + HSV_int[3];
 
-            inRange(img,Scalar(HSVrange[0],HSVrange[2],HSVrange[4]),
+            inRange(img_end,Scalar(HSVrange[0],HSVrange[2],HSVrange[4]),
                     Scalar(HSVrange[1],HSVrange[3],HSVrange[5]),img_end);
             Mat kernel = getStructuringElement(MORPH_RECT, cv::Size(8, 8));
             Mat kernel_open = getStructuringElement(MORPH_RECT, cv::Size(2, 2));
@@ -84,9 +87,12 @@ int main ()
                     drawContours(dst, contours, i, color, 2, 8, hierarchy, 0, Point(0,0));
                 }
                 //imshow("output",dst);
-                flag = find_elude(contours);
-                    
-                //waitKey(10);
+                double distance;
+                flag = find_elude(contours,distance);
+                img_num ++;
+                putText(img,"distance"+to_string(distance),Point(50,60),FONT_HERSHEY_SIMPLEX,1,Scalar(0,0,0),4,8);//在图片上写文字
+                imwrite("../out/"+to_string(img_num)+".jpg",img);
+                //waitKey(1000);
             }
         }
 
@@ -105,7 +111,7 @@ int main ()
 }
 
 
-bool find_elude(vector<vector<Point>> contours)
+bool find_elude(vector<vector<Point>> contours,double &distance)
 {
 
     int x_max,y_max,x_min,y_min;
@@ -155,15 +161,15 @@ bool find_elude(vector<vector<Point>> contours)
     //     << "y_max" << y_max << endl
     //     << "x_max" << x_max << endl;
     //12000为人工测试距离，其意指当达到预判位置时路障色块所像素最小外接矩形大小
-    float distance = sqrt(12000)/(sqrt(((x_max - x_min) * (y_max - y_min))));
+    distance = sqrt(12000)/(sqrt(((x_max - x_min) * (y_max - y_min))));
     cout << "distance: " << distance<< endl;
-    if (distance <= 1)
+    if (distance <= 1.0)
         return true;
     else
         return false;
 }
 
-void sendto_car(bool flag,double dis_x,double angle,Serial car_serial)
+void sendto_car(bool flag,double dis_x,double angle,Serial &car_serial)
 {
     unsigned short send_angle = angle + 32768;
     unsigned short send_dis_x = dis_x + 32768;
