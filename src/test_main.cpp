@@ -29,8 +29,8 @@ int main ()
     #endif // !end SERIAL
     
     bool flag = false;
-    // if(!car_capture.open(0))
-    if(!car_capture.open("../data/test.mp4"))
+    if(!car_capture.open(0))
+    //if(!car_capture.open("../data/test.mp4"))
         cout << "video open fail!" << endl;
     else
         cout << "video open success!" << endl;
@@ -43,7 +43,7 @@ int main ()
         if(img.empty()){
             break;;
         }
-        if (num == 30)
+        if (num == 6)
         {   
             num = 0;
             lane_detect(img,dis_x,angle);
