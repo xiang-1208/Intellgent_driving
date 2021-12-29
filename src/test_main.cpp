@@ -54,7 +54,7 @@ int main ()
         sendto_car(flag,dis_x,angle,car_serial);
         #endif
 
-        waitKey(10);
+        // waitKey(10);
     }    
     return 0;
 }
@@ -217,10 +217,12 @@ void lane_detect(Mat img,double& dis_x,double& angle)
         phi = CV_PI/2;
     else
         phi = atan((k1+k2)/2);  // 传参数：角度. 这个角度的值是弧度制的，比如np.arctan(1) = pi/4 = 0.785
+    double x_mid = (x2+x4)/2;
 
     // 弧度制转化成角度制，如果phi大于0表示往右边偏多少角度，小于0表示往左边偏
     // 照片水平底为横轴，中点且垂直底部的线为纵轴（90°），来算车载摄像头目前与这条线偏多少
     angle = 90 - (phi/CV_PI)*180; // 角度制
+    dis_x = ((320-x_mid)/abs(x2-x4))*63;
 
     // imwrite("..out/result.png",dmy);
 }
@@ -272,6 +274,6 @@ void elude(Mat img,bool & flag,double& distance)
         img_num ++;
         putText(img,"distance"+to_string(distance),Point(50,60),FONT_HERSHEY_SIMPLEX,1,Scalar(0,0,0),4,8);//在图片上写文字
         // imwrite("../out/"+to_string(img_num)+".jpg",img);
-        waitKey(1000);
+        // waitKey(1000);
     }
 }
